@@ -1,5 +1,5 @@
-function createComp(){
-    return app.project.items.addComp("split_template", 1920, 1080, 1, 15, 30);
+function createComp(width, height, framerate){
+    return app.project.items.addComp("split_template", width, height, 1, 15, framerate);
 }
 
 function createSolidLayer(comp, name, colour, pos){
@@ -27,14 +27,14 @@ function createPoly(comp, verts, name){
     return layer;
 }
 
-function addLineShape(comp, Verts, name){
+function addLineShape(comp, verts, name){
     var lineShapeLayer = comp.layers.addShape();
     var shapeGroup = lineShapeLayer.property("ADBE Root Vectors Group");
     shapeGroup.addProperty("ADBE Vector Shape - Group");
     var stroke = shapeGroup.addProperty("ADBE Vector Graphic - Stroke");
     stroke.property("Stroke Width").setValue(3);
     var lineShape = new Shape();
-    lineShape.vertices = Verts;
+    lineShape.vertices = verts;
     lineShape.closed = false;
     shapeGroup.property(1).property("ADBE Vector Shape").setValue(lineShape);
     lineShapeLayer.property("Position").setValue([0,0,0]);
@@ -44,81 +44,73 @@ function addLineShape(comp, Verts, name){
 
 function splitCompEvenly(comp, Num, Angle){
 
-    var x = 1920/(Num)
-    var Coords = [];
-    var Change = 0
-    var Top = []
-    var Bottom = []
+    var x = comp.width/(Num)
     var processedLines = [];
 
     for(var i = 1; i < (Num); i++){
-        Coords = []
-        Change = (540 * Math.tan(Angle * Math.PI / 180))
-        Top = [(i*x) + Change, 0];
-        Bottom = [(i*x) - Change, 1080]; 
-        Coords.push(Top);
-        Coords.push(Bottom);
-        processedLines.push(Coords);
+        var coords = []
+        var change = (540 * Math.tan(Angle * Math.PI / 180))
+        var top = [(i*x) + change, 0];
+        var bottom = [(i*x) - change, comp.height]; 
+        coords.push(top);
+        coords.push(bottom);
+        processedLines.push(coords);
     }
 
     var prevLine = [];
     for(var i = 0; i < processedLines.length; i++){
         var line = processedLines[i];
         if (i === 0) {
-            Verts = [[0, 0], line[0], line[1], [0, 1080]];
+            verts = [[0, 0], line[0], line[1], [0, comp.height]];
         } else {
-            Verts = [prevLine[0], line[0], line[1], prevLine[1]];
+            verts = [prevLine[0], line[0], line[1], prevLine[1]];
         }
         prevLine = line;
 
         var solid = createSolidLayer(comp, ("Layer" + i), [Math.random(), Math.random(), Math.random()], [comp.width/2, comp.height/2, 0]);
-        var matte = createPoly(comp, Verts, ("Matte" + i));
+        var matte = createPoly(comp, verts, ("Matte" + i));
         solid.setTrackMatte(matte, TrackMatteType.ALPHA);
         addLineShape(comp, line, "Divider" + i);
     }
-    Verts = [prevLine[0], [1920, 0], [1920, 1080], prevLine[1]];
+    verts = [prevLine[0], [comp.width, 0], [comp.width, comp.height], prevLine[1]];
     var solid = createSolidLayer(comp, ("End Layer"), [Math.random(), Math.random(), Math.random()], [comp.width/2, comp.height/2, 0]);
-    var matte = createPoly(comp, Verts, ("End Matte"));
+    var matte = createPoly(comp, verts, ("End Matte"));
     solid.setTrackMatte(matte, TrackMatteType.ALPHA);
 }
 
 function splitCompCustomisably(comp, lines){
     // lines input = [x Value:0, Angle:0, Index:0]
-    var Coords = [];
-    var Change = 0
-    var Top = []
-    var Bottom = []
     var processedLines = [];
 
     for(var i = 0; i < lines.length; i++){
-        Coords = [];
-        Change = (540 * Math.tan(lines[i][2] * Math.PI / 180)); 
-        Top = [lines[i][1] + Change, 0]; 
-        Bottom = [lines[i][1] - Change, 1080]; 
-        Coords.push(Top);
-        Coords.push(Bottom);
-        processedLines.push(Coords);
+        var coords = [];
+        var change = (540 * Math.tan(lines[i][2] * Math.PI / 180)); 
+        var top = [lines[i][1] + change, 0]; 
+        var bottom = [lines[i][1] - change, comp.height]; 
+        coords.push(top);
+        coords.push(bottom);
+        processedLines.push(coords);
     }
 
     var prevLine = [];
     for(var i = 0; i < processedLines.length; i++){
         var line = processedLines[i];
         if (i === 0) {
-            Verts = [[0, 0], line[0], line[1], [0, 1080]];
+            verts = [[0, 0], line[0], line[1], [0, comp.height]];
         } else {
-            Verts = [prevLine[0], line[0], line[1], prevLine[1]];
+            verts = [prevLine[0], line[0], line[1], prevLine[1]];
         }
         prevLine = line;
 
         var solid = createSolidLayer(comp, ("Layer" + i), [Math.random(), Math.random(), Math.random()], [comp.width/2, comp.height/2, 0]);
-        var matte = createPoly(comp, Verts, ("Matte" + i));
+        var matte = createPoly(comp, verts, ("Matte" + i));
         solid.setTrackMatte(matte, TrackMatteType.ALPHA);
         addLineShape(comp, line, "Divider" + i)
     }
 
-    Verts = [prevLine[0], [1920, 0], [1920, 1080], prevLine[1]];
+    verts = [prevLine[0], [comp.width, 0], [comp.width, comp.height], prevLine[1]];
     var solid = createSolidLayer(comp, ("End Layer"), [Math.random(), Math.random(), Math.random()], [comp.width/2, comp.height/2, 0]);
-    var matte = createPoly(comp, Verts, ("End Matte"));
+    var matte = createPoly(comp, verts, ("End Matte"));
     solid.setTrackMatte(matte, TrackMatteType.ALPHA);
     
 }
@@ -207,7 +199,7 @@ function openEvenDistributionWindow() {
 
         
         app.beginUndoGroup("split_undo");
-        var comp = createComp();
+        var comp = createComp(1920, 1080, 30);
         splitCompEvenly(comp, numSections, angle);
         app.endUndoGroup();
 
@@ -260,7 +252,7 @@ function addSlider() {
 
     var newSlider = sliderGroup.add("slider", undefined, undefined, undefined, undefined, { name: "slider" });
     newSlider.minvalue = 0;
-    newSlider.maxvalue = 1920; 
+    newSlider.maxvalue = comp.width; 
     newSlider.value = 0;
     newSlider.preferredSize.width = 400;
 
@@ -277,7 +269,6 @@ function addSlider() {
 button1.onClick = function () {
     addSlider();
 };
-
 
 var confirmButton = dialog.add("button", undefined, undefined, { name: "confirmButton" });
 confirmButton.text = "Confirm";
@@ -314,7 +305,7 @@ function onConfirm() {
     alert("Divider Settings:\n" + resultMessage);
 
     app.beginUndoGroup("split_undo");
-    var comp = createComp();
+    var comp = createComp(1920, 1080, 30);
     splitCompCustomisably(comp, lines);
     app.endUndoGroup();
 
